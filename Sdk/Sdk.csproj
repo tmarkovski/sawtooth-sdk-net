@@ -5,4 +5,14 @@
     <RootNamespace>Sawtooh.Sdk</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Protobuf\Protobuf.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Processor\" />
+    <Folder Include="Messaging\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NetMQ" Version="4.0.0.1" />
+  </ItemGroup>
 </Project>

@@ -2,6 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Sawtooh.Sdk.Protobuf</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf.Tools" Version="3.5.1" />
+    <PackageReference Include="Google.Protobuf" Version="3.5.1" />
+  </ItemGroup>
 </Project>
