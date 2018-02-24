@@ -18,7 +18,7 @@ namespace Sawtooh.Sdk
             set;
         }
 
-        string Namespaces
+        string[] Namespaces
         {
             get;
             set;

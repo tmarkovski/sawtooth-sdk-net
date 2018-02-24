@@ -6,6 +6,10 @@ using Google.Protobuf;
 using NetMQ;
 using NetMQ.Sockets;
 using static Message.Types;
+using System.Security.Cryptography;
+using System.Text;
+using System.Linq;
+using System.Threading;
 
 namespace Sawtooh.Sdk.Messaging
 {
@@ -13,16 +17,22 @@ namespace Sawtooh.Sdk.Messaging
     {
         readonly string Address;
 
-        readonly DealerSocket Socket;
+        readonly NetMQSocket Socket;
         readonly NetMQPoller Poller;
 
         readonly ConcurrentDictionary<string, TaskCompletionSource<Message>> Futures;
 
-        public Stream(string address)
+        internal static SHA256 SHA256 = SHA256.Create();
+
+        public Stream(string address) : this(address, new DealerSocket())
+        {
+        }
+
+        public Stream(string address, NetMQSocket socket)
         {
             Address = address;
 
-            Socket = new DealerSocket();
+            Socket = socket;
             Poller = new NetMQPoller();
 
             Socket.ReceiveReady += OnReceive;
@@ -31,6 +41,12 @@ namespace Sawtooh.Sdk.Messaging
             Futures = new ConcurrentDictionary<string, TaskCompletionSource<Message>>();
         }
 
+        /// <summary>
+        /// Generates a unique identifier
+        /// </summary>
+        /// <returns>The identifier.</returns>
+        public static string GenerateId() => String.Concat(SHA256.ComputeHash(Guid.NewGuid().ToByteArray()).Select(x => x.ToString("x2")));
+
         void OnReceive(object sender, NetMQSocketEventArgs e)
         {
             var message = new Message();
@@ -38,8 +54,9 @@ namespace Sawtooh.Sdk.Messaging
 
             if (message.MessageType == MessageType.PingRequest)
             {
-                var pingMessage = new Message(message)
+                var pingMessage = new Message
                 {
+                    CorrelationId = message.CorrelationId,
                     MessageType = MessageType.PingResponse,
                     Content = ByteString.Empty
                 };
@@ -64,24 +81,16 @@ namespace Sawtooh.Sdk.Messaging
             }
         }
 
-        public Task Send(Message message)
+        public Task<Message> Send(Message message, CancellationToken cancellationToken)
         {
             var source = new TaskCompletionSource<Message>();
+            cancellationToken.Register(() => source.SetCanceled());
+
             Futures.TryAdd(message.CorrelationId, source);
 
             Socket.SendFrame(message.ToByteString().ToByteArray());
 
             return source.Task;
-        }
-
-        public void SendBack(Message message)
-        {
-            Socket.SendFrame(message.ToByteString().ToByteArray());
-
-            if (!Futures.TryRemove(message.CorrelationId, out var _))
-            {
-                Debug.WriteLine($"Couldn't find existing message {message.CorrelationId} of type {message.MessageType}");
-            }
         }
 
         public void Connect()
