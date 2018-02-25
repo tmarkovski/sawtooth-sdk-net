@@ -22,20 +22,18 @@ namespace Sawtooh.Sdk.Messaging
 
         readonly ConcurrentDictionary<string, TaskCompletionSource<Message>> Futures;
 
+        internal event EventHandler<TpProcessRequest> ProcessRequest;
+
         internal static SHA256 SHA256 = SHA256.Create();
 
-        public Stream(string address) : this(address, new DealerSocket())
-        {
-        }
-
-        public Stream(string address, NetMQSocket socket)
+        public Stream(string address)
         {
             Address = address;
 
-            Socket = socket;
-            Poller = new NetMQPoller();
+            Socket = new DealerSocket();
+            Socket.ReceiveReady += Receive;
 
-            Socket.ReceiveReady += OnReceive;
+            Poller = new NetMQPoller();
             Poller.Add(Socket);
 
             Futures = new ConcurrentDictionary<string, TaskCompletionSource<Message>>();
@@ -47,21 +45,23 @@ namespace Sawtooh.Sdk.Messaging
         /// <returns>The identifier.</returns>
         public static string GenerateId() => String.Concat(SHA256.ComputeHash(Guid.NewGuid().ToByteArray()).Select(x => x.ToString("x2")));
 
-        void OnReceive(object sender, NetMQSocketEventArgs e)
+        void Receive(object _, NetMQSocketEventArgs e)
         {
             var message = new Message();
             message.MergeFrom(e.Socket.ReceiveFrameBytes());
 
-            if (message.MessageType == MessageType.PingRequest)
+            switch (message.MessageType)
             {
-                var pingMessage = new Message
-                {
-                    CorrelationId = message.CorrelationId,
-                    MessageType = MessageType.PingResponse,
-                    Content = ByteString.Empty
-                };
-                Socket.SendFrame(pingMessage.ToByteString().ToByteArray());
-                return;
+                case MessageType.PingRequest:
+                    Socket.SendFrame(MessageExt.Encode(message, new PingResponse(), MessageType.PingResponse));
+                    return;
+                case MessageType.TpProcessRequest:
+                    var processRequest = MessageExt.Decode<TpProcessRequest>(message);
+                    ProcessRequest?.Invoke(this, processRequest);
+                    return;
+                default:
+                    Debug.WriteLine($"Message of type {message.MessageType} received");
+                    break;
             }
 
             if (Futures.TryGetValue(message.CorrelationId, out var source))
@@ -79,6 +79,12 @@ namespace Sawtooh.Sdk.Messaging
             {
                 Futures.TryAdd(message.CorrelationId, new TaskCompletionSource<Message>());
             }
+        }
+
+        public void Disconnect()
+        {
+            Socket.Disconnect(Address);
+            Poller.StopAsync();
         }
 
         public Task<Message> Send(Message message, CancellationToken cancellationToken)

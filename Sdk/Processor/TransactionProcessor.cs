@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
@@ -13,12 +14,12 @@ namespace Sawtooh.Sdk.Processor
     {
         readonly Stream Stream;
 
-        readonly List<ITransactionHandler> Handlers;
+        readonly List<ITransactionHandler> Handlers = new List<ITransactionHandler>();
 
         public TransactionProcessor(string address)
         {
             Stream = new Stream(address);
-            Handlers = new List<ITransactionHandler>();
+            Stream.ProcessRequest += OnProcessRequest;
         }
 
         public void AddHandler(ITransactionHandler handler) => Handlers.Add(handler);
@@ -32,18 +33,17 @@ namespace Sawtooh.Sdk.Processor
                 var request = new TpRegisterRequest { Version = handler.Version, Family = handler.FamilyName };
                 request.Namespaces.AddRange(handler.Namespaces);
 
-                var response = await Stream.Send(new Message
-                {
-                    CorrelationId = Stream.GenerateId(),
-                    MessageType = MessageType.TpRegisterRequest,
-                    Content = request.ToByteString()
-                }, CancellationToken.None);
+                var registrationResult = MessageExt.Decode<TpRegisterResponse>(await Stream.Send(MessageExt.Encode(request, MessageType.TpRegisterRequest), CancellationToken.None));
 
-                var reg = new TpRegisterResponse();
-                reg.MergeFrom(response.Content);
-
-                Debug.WriteLine($"Transaction processor {handler.FamilyName} {handler.Version} registration status: {reg.Status}");
+                Debug.WriteLine($"Transaction processor {handler.FamilyName} {handler.Version} registration status: {registrationResult.Status}");
             }
+        }
+
+        async void OnProcessRequest(object sender, TpProcessRequest e)
+        {
+            await Handlers.FirstOrDefault(x => x.FamilyName == e.Header.FamilyName 
+                                          && x.Version == e.Header.FamilyVersion)?
+                          .Apply(e, new Context(Stream, e.ContextId));
         }
     }
 }

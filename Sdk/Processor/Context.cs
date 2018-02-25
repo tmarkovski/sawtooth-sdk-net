@@ -20,40 +20,40 @@ namespace Sawtooh.Sdk.Processor
             ContextId = contextId;
         }
 
-        public async Task<(string Address, ByteString Data)[]> GetState(string[] addresses)
+        public async Task<TpStateEntry[]> GetState(string[] addresses)
         {
             var request = new TpStateGetRequest { ContextId = ContextId };
             request.Addresses.AddRange(addresses);
 
-            var response = await Stream.Send(new Message
-            {
-                MessageType = MessageType.TpStateGetRequest,
-                CorrelationId = Stream.GenerateId(),
-                Content = request.ToByteString()
-            }, CancellationToken.None);
-
-            var state = new TpStateGetResponse();
-            state.MergeFrom(response.Content);
-
-            return state.Entries.Select(x => (x.Address, x.Data)).ToArray();
+            return MessageExt.Decode<TpStateGetResponse>(await Stream.Send(MessageExt.Encode(request, MessageType.TpStateGetRequest), CancellationToken.None))
+                             .Entries.ToArray();
         }
 
-        public async Task<string[]> SetState((string, ByteString)[] addressValuePairs)
+        public async Task<string[]> SetState(TpStateEntry[] addressValuePairs)
         {
             var request = new TpStateSetRequest { ContextId = ContextId };
-            request.Entries.AddRange(addressValuePairs.Select(x => new TpStateEntry { Address = x.Item1, Data = x.Item2 }));
+            request.Entries.AddRange(addressValuePairs);
 
-            var response = await Stream.Send(new Message
-            {
-                MessageType = MessageType.TpStateSetRequest,
-                CorrelationId = Stream.GenerateId(),
-                Content = request.ToByteString()
-            }, CancellationToken.None);
+            return MessageExt.Decode<TpStateSetResponse>(await Stream.Send(MessageExt.Encode(request, MessageType.TpStateSetRequest), CancellationToken.None))
+                             .Addresses.ToArray();
+        }
 
-            var state = new TpStateSetResponse();
-            state.MergeFrom(response.Content);
+        public async Task<string[]> DeleteState(string[] addresses)
+        {
+            var request = new TpStateDeleteRequest { ContextId = ContextId };
+            request.Addresses.AddRange(addresses);
 
-            return state.Addresses.ToArray();
+            return MessageExt.Decode<TpStateDeleteResponse>(await Stream.Send(MessageExt.Encode(request, MessageType.TpStateDeleteRequest), CancellationToken.None))
+                             .Addresses.ToArray();
+        }
+
+        public async Task<TpReceiptAddDataResponse.Types.Status> AddReceiptData(ByteString data)
+        {
+            var request = new TpReceiptAddDataRequest() { ContextId = ContextId };
+            request.Data = data;
+
+            return MessageExt.Decode<TpReceiptAddDataResponse>(await Stream.Send(MessageExt.Encode(request, MessageType.TpReceiptAddDataRequest), CancellationToken.None))
+                             .Status;
         }
     }
 }

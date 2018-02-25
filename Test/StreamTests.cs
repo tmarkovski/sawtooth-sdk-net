@@ -14,17 +14,16 @@ namespace Test
         [Fact]
         public void RespondToPing()
         {
+            // Setup
             var serverSocket = new PairSocket();
-            var clientSocket = new PairSocket();
+            serverSocket.Bind("inproc://stream-test");
 
-            serverSocket.Bind("inproc://inproc-test");
+            var pingMessage = MessageExt.Encode(new PingRequest(), MessageType.PingRequest);
 
-            var correlationId = Stream.GenerateId();
-            var pingMessage = new Message() { CorrelationId = correlationId, MessageType = MessageType.PingRequest, Content = ByteString.Empty };
-
-            var stream = new Stream("inproc://inproc-test", clientSocket);
+            var stream = new Stream("inproc://stream-test");
             stream.Connect();
 
+            // Run test case
             var task1 = Task.Run(() => serverSocket.SendFrame(pingMessage.ToByteString().ToByteArray()));
             var task2 = Task.Run(() =>
             {
@@ -38,8 +37,12 @@ namespace Test
 
             var actualMessage = task2.Result;
 
+            // Verify
             Assert.Equal(MessageType.PingResponse, actualMessage.MessageType);
-            Assert.Equal(correlationId, actualMessage.CorrelationId);
+            Assert.Equal(pingMessage.CorrelationId, actualMessage.CorrelationId);
+
+            serverSocket.Unbind("inproc://stream-test");
+            stream.Disconnect();
         }
     }
 }
