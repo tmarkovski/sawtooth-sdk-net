@@ -22,7 +22,7 @@ namespace Sawtooh.Sdk.Messaging
 
         readonly ConcurrentDictionary<string, TaskCompletionSource<Message>> Futures;
 
-        internal event EventHandler<TpProcessRequest> ProcessRequest;
+        internal Func<TpProcessRequest, Task> ProcessRequestHandler;
 
         internal static SHA256 SHA256 = SHA256.Create();
 
@@ -45,7 +45,7 @@ namespace Sawtooh.Sdk.Messaging
         /// <returns>The identifier.</returns>
         public static string GenerateId() => String.Concat(SHA256.ComputeHash(Guid.NewGuid().ToByteArray()).Select(x => x.ToString("x2")));
 
-        void Receive(object _, NetMQSocketEventArgs e)
+        async void Receive(object _, NetMQSocketEventArgs e)
         {
             var message = new Message();
             message.MergeFrom(e.Socket.ReceiveFrameBytes());
@@ -56,8 +56,8 @@ namespace Sawtooh.Sdk.Messaging
                     Socket.SendFrame(MessageExt.Encode(message, new PingResponse(), MessageType.PingResponse));
                     return;
                 case MessageType.TpProcessRequest:
-                    var processRequest = MessageExt.Decode<TpProcessRequest>(message);
-                    ProcessRequest?.Invoke(this, processRequest);
+                    await ProcessRequestHandler?.Invoke(MessageExt.Decode<TpProcessRequest>(message));
+                    Socket.SendFrame(MessageExt.Encode(message, new TpProcessResponse { Status = TpProcessResponse.Types.Status.Ok}, MessageType.TpProcessResponse));
                     return;
                 default:
                     Debug.WriteLine($"Message of type {message.MessageType} received");

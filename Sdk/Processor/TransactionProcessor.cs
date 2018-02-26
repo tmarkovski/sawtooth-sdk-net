@@ -19,7 +19,7 @@ namespace Sawtooh.Sdk.Processor
         public TransactionProcessor(string address)
         {
             Stream = new Stream(address);
-            Stream.ProcessRequest += OnProcessRequest;
+            Stream.ProcessRequestHandler = OnProcessRequest;
         }
 
         public void AddHandler(ITransactionHandler handler) => Handlers.Add(handler);
@@ -39,11 +39,11 @@ namespace Sawtooh.Sdk.Processor
             }
         }
 
-        async void OnProcessRequest(object sender, TpProcessRequest e)
+        async Task OnProcessRequest(TpProcessRequest request)
         {
-            await Handlers.FirstOrDefault(x => x.FamilyName == e.Header.FamilyName 
-                                          && x.Version == e.Header.FamilyVersion)?
-                          .Apply(e, new Context(Stream, e.ContextId));
+            await Handlers.FirstOrDefault(x => x.FamilyName == request.Header.FamilyName 
+                                          && x.Version == request.Header.FamilyVersion)?
+                          .Apply(request, new Context(Stream, request.ContextId));
         }
     }
 }
