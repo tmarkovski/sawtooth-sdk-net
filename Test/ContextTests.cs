@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using Google.Protobuf;
 using NetMQ;
 using NetMQ.Sockets;
-using Sawtooh.Sdk.Messaging;
-using Sawtooh.Sdk.Processor;
+using Sawtooth.Sdk.Messaging;
+using Sawtooth.Sdk.Processor;
 using Xunit;
 using static Message.Types;
 

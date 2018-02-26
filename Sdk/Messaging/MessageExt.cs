@@ -3,7 +3,7 @@ using System.Diagnostics.Contracts;
 using Google.Protobuf;
 using static Message.Types;
 
-namespace Sawtooh.Sdk.Messaging
+namespace Sawtooth.Sdk.Messaging
 {
     public static class MessageExt
     {

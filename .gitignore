@@ -26,6 +26,8 @@ autom4te.cache/
 *.tar.gz
 tarballs/
 test-results/
+.vscode/
+nuget/
 Thumbs.db
 
 # Mac bundle stuff

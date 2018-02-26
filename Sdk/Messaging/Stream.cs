@@ -11,7 +11,7 @@ using System.Text;
 using System.Linq;
 using System.Threading;
 
-namespace Sawtooh.Sdk.Messaging
+namespace Sawtooth.Sdk.Messaging
 {
     public class Stream
     {

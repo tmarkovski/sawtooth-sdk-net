@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Sawtooh.Sdk.Processor;
+using Sawtooth.Sdk.Processor;
 
-namespace Sawtooh.Sdk
+namespace Sawtooth.Sdk
 {
     public interface ITransactionHandler
     {

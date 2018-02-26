@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Google.Protobuf;
 using NetMQ;
 using NetMQ.Sockets;
-using Sawtooh.Sdk.Messaging;
+using Sawtooth.Sdk.Messaging;
 using Xunit;
 using static Message.Types;
 

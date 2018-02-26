@@ -5,10 +5,10 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
-using Sawtooh.Sdk.Messaging;
+using Sawtooth.Sdk.Messaging;
 using static Message.Types;
 
-namespace Sawtooh.Sdk.Processor
+namespace Sawtooth.Sdk.Processor
 {
     public class TransactionProcessor
     {
