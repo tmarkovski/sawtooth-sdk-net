@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Sawtooth.Sdk</id>
+    <version>1.0.0</version>
+    <authors>Tomislav Markovski</authors>
+    <owners>Tomislav Markovski</owners>
+    <licenseUrl>https://github.com/tmarkovski/sawtooth-sdk-net/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/tmarkovski/sawtooth-sdk-net/</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Hyperledger Sawtooth processor SDK</description>
+    <releaseNotes>Transaction processor and handler support. Includes protobuf types.</releaseNotes>
+    <copyright>Copyright 2018</copyright>
+    <tags>sawtooth hyperledger</tags>
+    <dependencies>
+      <dependency id="NetMQ" version="4.0.0.1" />
+      <dependency id="Google.Protobuf" version="3.5.1" />
+    </dependencies>
+  </metadata>
+
+  <files>
+    <file src="Sdk/bin/Release/netstandard2.0/Sawtooth.Sdk.dll" target="lib/netstandard2.0" />
+    <file src="Sdk/bin/Release/netstandard2.0/Sawtooth.Protobuf.dll" target="lib/netstandard2.0" />
+  </files>
+</package>
