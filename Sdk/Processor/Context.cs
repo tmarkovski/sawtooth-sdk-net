@@ -25,7 +25,8 @@ namespace Sawtooth.Sdk.Processor
             var request = new TpStateGetRequest { ContextId = ContextId };
             request.Addresses.AddRange(addresses);
 
-            return MessageExt.Decode<TpStateGetResponse>(await Stream.Send(MessageExt.Encode(request, MessageType.TpStateGetRequest), CancellationToken.None))
+            return MessageExt.Decode<TpStateGetResponse>(
+                await Stream.Send(MessageExt.Encode(request, MessageType.TpStateGetRequest), CancellationToken.None))
                              .Entries.ToArray();
         }
 
@@ -34,7 +35,8 @@ namespace Sawtooth.Sdk.Processor
             var request = new TpStateSetRequest { ContextId = ContextId };
             request.Entries.AddRange(addressValuePairs);
 
-            return MessageExt.Decode<TpStateSetResponse>(await Stream.Send(MessageExt.Encode(request, MessageType.TpStateSetRequest), CancellationToken.None))
+            return MessageExt.Decode<TpStateSetResponse>(
+                await Stream.Send(MessageExt.Encode(request, MessageType.TpStateSetRequest), CancellationToken.None))
                              .Addresses.ToArray();
         }
 
@@ -43,7 +45,8 @@ namespace Sawtooth.Sdk.Processor
             var request = new TpStateDeleteRequest { ContextId = ContextId };
             request.Addresses.AddRange(addresses);
 
-            return MessageExt.Decode<TpStateDeleteResponse>(await Stream.Send(MessageExt.Encode(request, MessageType.TpStateDeleteRequest), CancellationToken.None))
+            return MessageExt.Decode<TpStateDeleteResponse>(
+                await Stream.Send(MessageExt.Encode(request, MessageType.TpStateDeleteRequest), CancellationToken.None))
                              .Addresses.ToArray();
         }
 
@@ -52,7 +55,8 @@ namespace Sawtooth.Sdk.Processor
             var request = new TpReceiptAddDataRequest() { ContextId = ContextId };
             request.Data = data;
 
-            return MessageExt.Decode<TpReceiptAddDataResponse>(await Stream.Send(MessageExt.Encode(request, MessageType.TpReceiptAddDataRequest), CancellationToken.None))
+            return MessageExt.Decode<TpReceiptAddDataResponse>(
+                await Stream.Send(MessageExt.Encode(request, MessageType.TpReceiptAddDataRequest), CancellationToken.None))
                              .Status;
         }
     }

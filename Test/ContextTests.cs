@@ -9,7 +9,7 @@ using Sawtooth.Sdk.Processor;
 using Xunit;
 using static Message.Types;
 
-namespace Test
+namespace Sawtooth.Sdk.Test
 {
     public class ContextTests
     {

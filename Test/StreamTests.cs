@@ -7,7 +7,7 @@ using Sawtooth.Sdk.Messaging;
 using Xunit;
 using static Message.Types;
 
-namespace Test
+namespace Sawtooth.Sdk.Test
 {
     public class StreamTests
     {

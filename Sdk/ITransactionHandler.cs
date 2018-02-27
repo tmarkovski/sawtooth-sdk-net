@@ -9,19 +9,16 @@ namespace Sawtooth.Sdk
         string FamilyName
         {
             get;
-            set;
         }
 
         string Version
         {
             get;
-            set;
         }
 
         string[] Namespaces
         {
             get;
-            set;
         }
 
         Task Apply(TpProcessRequest request, Context context);
