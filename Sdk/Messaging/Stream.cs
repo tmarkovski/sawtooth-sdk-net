@@ -45,39 +45,44 @@ namespace Sawtooth.Sdk.Messaging
         /// <returns>The identifier.</returns>
         public static string GenerateId() => String.Concat(SHA256.ComputeHash(Guid.NewGuid().ToByteArray()).Select(x => x.ToString("x2")));
 
-        async void Receive(object _, NetMQSocketEventArgs e)
+        void Receive(object _, NetMQSocketEventArgs e)
         {
-            var message = new Message();
-            message.MergeFrom(e.Socket.ReceiveFrameBytes());
-
-            switch (message.MessageType)
+            foreach (var frame in e.Socket.ReceiveMultipartBytes())
             {
-                case MessageType.PingRequest:
-                    Socket.SendFrame(MessageExt.Encode(message, new PingResponse(), MessageType.PingResponse));
-                    return;
-                case MessageType.TpProcessRequest:
-                    await ProcessRequestHandler?.Invoke(MessageExt.Decode<TpProcessRequest>(message));
-                    Socket.SendFrame(MessageExt.Encode(message, new TpProcessResponse { Status = TpProcessResponse.Types.Status.Ok}, MessageType.TpProcessResponse));
-                    return;
-                default:
-                    Debug.WriteLine($"Message of type {message.MessageType} received");
-                    break;
-            }
+                var message = new Message();
+                message.MergeFrom(frame);
 
-            if (Futures.TryGetValue(message.CorrelationId, out var source))
-            {
-                if (source.Task.Status == TaskStatus.RanToCompletion)
+                Debug.WriteLine($"Message of type {message.MessageType} received");
+
+                switch (message.MessageType)
                 {
-                    Futures.TryRemove(message.CorrelationId, out var _);
+                    case MessageType.PingRequest:
+                        Socket.SendFrame(MessageExt.Encode(message, new PingResponse(), MessageType.PingResponse));
+                        return;
+                    case MessageType.TpProcessRequest:
+                        Task.Run(async () => { await ProcessRequestHandler?.Invoke(MessageExt.Decode<TpProcessRequest>(message)); });
+                        e.Socket.SendFrame(MessageExt.Encode(message, new TpProcessResponse { Status = TpProcessResponse.Types.Status.Ok }, MessageType.TpProcessResponse));
+                        return;
+                    default:
+                        Debug.WriteLine($"Message of type {message.MessageType} received");
+                        break;
+                }
+
+                if (Futures.TryGetValue(message.CorrelationId, out var source))
+                {
+                    if (source.Task.Status == TaskStatus.RanToCompletion)
+                    {
+                        Futures.TryRemove(message.CorrelationId, out var _);
+                    }
+                    else
+                    {
+                        source.SetResult(message);
+                    }
                 }
                 else
                 {
-                    source.SetResult(message);
+                    Futures.TryAdd(message.CorrelationId, new TaskCompletionSource<Message>());
                 }
-            }
-            else
-            {
-                Futures.TryAdd(message.CorrelationId, new TaskCompletionSource<Message>());
             }
         }
 
