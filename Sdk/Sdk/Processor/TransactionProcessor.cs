@@ -24,7 +24,7 @@ namespace Sawtooth.Sdk.Processor
 
         public void AddHandler(ITransactionHandler handler) => Handlers.Add(handler);
 
-        public async Task Start()
+        public async void Start()
         {
             Stream.Connect();
 
@@ -33,17 +33,22 @@ namespace Sawtooth.Sdk.Processor
                 var request = new TpRegisterRequest { Version = handler.Version, Family = handler.FamilyName };
                 request.Namespaces.AddRange(handler.Namespaces);
 
-                var registrationResult = MessageExt.Decode<TpRegisterResponse>(await Stream.Send(MessageExt.Encode(request, MessageType.TpRegisterRequest), CancellationToken.None));
-
-                Debug.WriteLine($"Transaction processor {handler.FamilyName} {handler.Version} registration status: {registrationResult.Status}");
+                var response = await Stream.Send(request.Wrap(MessageType.TpRegisterRequest), CancellationToken.None);
+                Console.WriteLine($"Transaction processor registration: {response.Unwrap<TpRegisterResponse>().Status}");
             }
+        }
+
+        public void Stop()
+        {
+            Task.WaitAll(new [] { Stream.Send(new TpUnregisterRequest().Wrap(MessageType.TpUnregisterRequest), CancellationToken.None) });
+            Stream.Disconnect();
         }
 
         async Task OnProcessRequest(TpProcessRequest request)
         {
-            await Handlers.FirstOrDefault(x => x.FamilyName == request.Header.FamilyName 
+            await Handlers.FirstOrDefault(x => x.FamilyName == request.Header.FamilyName
                                           && x.Version == request.Header.FamilyVersion)?
-                          .Apply(request, new Context(Stream, request.ContextId));
+                          .ApplyAsync(request, new TransactionContext(Stream, request.ContextId));
         }
     }
 }

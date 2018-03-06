@@ -86,7 +86,7 @@ public sealed partial class Setting : pb::IMessage<Setting> {
     get { return entries_; }
   }
 
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   public override bool Equals(object other) {
     return Equals(other as Setting);
   }

@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <RuntimeFrameworkVersion>2.0.5</RuntimeFrameworkVersion>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -16,6 +15,20 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sdk\Sdk.csproj" />
-    <ProjectReference Include="..\Client\Client.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Resources\mykey.pem" />
+    <None Remove="Resources\mykey_protected.pem" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\mykey.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\mykey_protected.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

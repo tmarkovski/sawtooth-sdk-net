@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Google.Protobuf;
 
 namespace Sawtooth.Sdk.Client
@@ -8,12 +9,18 @@ namespace Sawtooth.Sdk.Client
     public class Encoder
     {
         readonly EncoderSettings settings;
-        readonly Signer signer;
+        readonly ISigner signer;
 
         public Encoder(EncoderSettings settings, byte[] privateKey)
         {
             this.settings = settings;
             this.signer = new Signer(privateKey);
+        }
+
+        public Encoder(EncoderSettings settings, ISigner signer)
+        {
+            this.settings = settings;
+            this.signer = signer;
         }
 
         public Transaction CreateTransaction(byte[] payload)
@@ -67,9 +74,11 @@ namespace Sawtooth.Sdk.Client
             return Encode(new[] { batch });
         }
 
-        public byte[] EncodeSingleTransaction(byte[] payload)
-        {
-            return Encode(CreateBatch(CreateTransaction(payload)));
-        }
+        /// <summary>
+        /// Encodes a single transaction.
+        /// </summary>
+        /// <returns>The single transaction.</returns>
+        /// <param name="payload">Payload.</param>
+        public byte[] EncodeSingleTransaction(byte[] payload) => Encode(CreateBatch(CreateTransaction(payload)));
     }
 }

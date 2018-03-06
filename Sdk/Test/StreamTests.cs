@@ -18,9 +18,10 @@ namespace Sawtooth.Sdk.Test
             var serverSocket = new PairSocket();
             serverSocket.Bind("inproc://stream-test");
 
-            var pingMessage = MessageExt.Encode(new PingRequest(), MessageType.PingRequest);
+            var pingMessage = new PingRequest().Wrap(MessageType.PingRequest);
 
             var stream = new Stream("inproc://stream-test");
+            stream.ProcessRequestHandler = delegate { return Task.CompletedTask; }; // setting empty handler, to avoid exception
             stream.Connect();
 
             // Run test case
@@ -33,7 +34,7 @@ namespace Sawtooth.Sdk.Test
                 return message;
             });
 
-            Task.WaitAll(new[] { task1, task2 });
+            Task.WhenAll(new[] { task1, task2 });
 
             var actualMessage = task2.Result;
 

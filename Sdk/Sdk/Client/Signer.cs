@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Org.BouncyCastle.Asn1.X9;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
@@ -6,15 +8,15 @@ using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Math;
+using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
 
 namespace Sawtooth.Sdk.Client
 {
-    public class Signer
+    public class Signer : ISigner
     {
         readonly static X9ECParameters Secp256k1 = ECNamedCurveTable.GetByName("secp256k1");
         readonly static ECDomainParameters DomainParams = new ECDomainParameters(Secp256k1.Curve, Secp256k1.G, Secp256k1.N, Secp256k1.H);
-        readonly IDigest Sha256Digest = new Sha256Digest();
 
         readonly ECPrivateKeyParameters PrivateKey;
 
@@ -23,7 +25,6 @@ namespace Sawtooth.Sdk.Client
         /// </summary>
         public Signer() : this(GeneratePrivateKey())
         {
-            
         }
 
         /// <summary>
@@ -36,19 +37,19 @@ namespace Sawtooth.Sdk.Client
         }
 
         /// <summary>
-        /// Generates random private key
+        /// Initializes a new instance of the <see cref="T:Sawtooth.Sdk.Client.Signer"/> class from a PEM data stream
         /// </summary>
-        /// <returns>The private key.</returns>
-        public static byte[] GeneratePrivateKey()
+        /// <param name="pemStream">Pem stream.</param>
+        /// <param name="passwordFinder">Password finder.</param>
+        public Signer(Stream pemStream, IPasswordFinder passwordFinder = null)
         {
-            var keyParams = new ECKeyGenerationParameters(DomainParams, new SecureRandom());
+            var pemReader = new PemReader(new StreamReader(pemStream), passwordFinder);
+            var KeyParameter = (AsymmetricCipherKeyPair)pemReader.ReadObject();
 
-            var generator = new ECKeyPairGenerator("ECDSA");
-            generator.Init(keyParams);
-
-            var keyPair = generator.GenerateKeyPair();
-            return (keyPair.Private as ECPrivateKeyParameters).D.ToByteArray();
+            PrivateKey = (ECPrivateKeyParameters)KeyParameter.Private;
         }
+
+        #region ISigner methods
 
         /// <summary>
         /// Sign the specified message with the associated private key
@@ -73,6 +74,33 @@ namespace Sawtooth.Sdk.Client
             return R.ToByteArrayUnsigned().Concat(S.ToByteArrayUnsigned()).ToArray();
         }
 
+        /// <summary>
+        /// Returns the public key from the private key
+        /// </summary>
+        /// <returns>The public key.</returns>
+        public byte[] GetPublicKey()
+        {
+            var Q = Secp256k1.G.Multiply(PrivateKey.D);
+            return new ECPublicKeyParameters(Q, DomainParams).Q.Normalize().GetEncoded();
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Returns the pirvate key associated with this instance
+        /// </summary>
+        /// <returns>The private key.</returns>
+        public byte[] GetPrivateKey() => PrivateKey.D.ToByteArray();
+
+        #region Static methods
+
+        /// <summary>
+        /// Verify the specified message and signature against the public key.
+        /// </summary>
+        /// <returns>The verify.</returns>
+        /// <param name="digest">Digest.</param>
+        /// <param name="signature">Signature.</param>
+        /// <param name="publicKey">Public key.</param>
         public static bool Verify(byte[] digest, byte[] signature, byte[] publicKey)
         {
             var X = new BigInteger(1, publicKey.Skip(1).Take(32).ToArray());
@@ -88,19 +116,20 @@ namespace Sawtooth.Sdk.Client
         }
 
         /// <summary>
-        /// Returns the public key from the private key
-        /// </summary>
-        /// <returns>The public key.</returns>
-        public byte[] GetPublicKey()
-        {
-            var Q = Secp256k1.G.Multiply(PrivateKey.D);
-            return new ECPublicKeyParameters(Q, DomainParams).Q.Normalize().GetEncoded();
-        }
-
-        /// <summary>
-        /// Returns the pirvate key associated with this instance
+        /// Generates random private key
         /// </summary>
         /// <returns>The private key.</returns>
-        public byte[] GetPrivateKey() => PrivateKey.D.ToByteArray();
+        public static byte[] GeneratePrivateKey()
+        {
+            var keyParams = new ECKeyGenerationParameters(DomainParams, new SecureRandom());
+
+            var generator = new ECKeyPairGenerator("ECDSA");
+            generator.Init(keyParams);
+
+            var keyPair = generator.GenerateKeyPair();
+            return (keyPair.Private as ECPrivateKeyParameters).D.ToByteArray();
+        }
+
+        #endregion
     }
 }

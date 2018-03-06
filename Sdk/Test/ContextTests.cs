@@ -22,9 +22,10 @@ namespace Sawtooth.Sdk.Test
             serverSocket.Bind(serverAddress);
 
             var stream = new Stream(serverAddress);
+            stream.ProcessRequestHandler = delegate { return Task.CompletedTask; }; // setting empty handler, to avoid exception
             stream.Connect();
 
-            var context = new Context(stream, "context");
+            var context = new TransactionContext(stream, "context");
             var addresses = new[] { "address1", "address2" };
 
             var task = Task.Run(() =>
@@ -37,12 +38,12 @@ namespace Sawtooth.Sdk.Test
                 var response = new TpStateGetResponse();
                 response.Entries.AddRange(addresses.Select(x => new TpStateEntry { Address = x, Data = ByteString.Empty }));
 
-                serverSocket.SendFrame(MessageExt.Encode(message, response, MessageType.TpStateGetResponse));
+                serverSocket.SendFrame(response.Wrap(message, MessageType.TpStateGetResponse).ToByteArray());
             });
 
-            var stateResponse = await context.GetState(addresses);
+            var stateResponse = await context.GetStateAsync(addresses);
 
-            Assert.Equal(addresses.Length, stateResponse.Length);
+            Assert.Equal(addresses.Length, stateResponse.Count());
         }
     }
 }
