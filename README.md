@@ -1,7 +1,5 @@
 # Hyperledger Sawtooth with .NET Core
 
-Published article at https://tomislav.tech/2018-03-02-sawtooth-sdk-net-core/
-
 >
 [Hyperledger Sawtooth](https://sawtooth.hyperledger.org/docs/core/releases/latest/introduction.html) is an enterprise blockchain platform for building distributed ledger applications and networks. The design philosophy targets keeping ledgers distributed and making smart contracts safe, particularly for enterprise use.
 >
@@ -312,3 +310,5 @@ Congratulations! You've written a full end to end Hyperledger Sawtooth applicati
 
 Please feel free to reach out with any questions or issues you find with the .NET SDK.
 Hope you enjoyed reading this, happy coding!
+
+Published article at https://tomislav.tech/2018-03-02-sawtooth-sdk-net-core/
