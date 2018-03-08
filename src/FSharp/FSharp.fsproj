@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Sawtooth.Sdk.FSharp</RootNamespace>
+    <AssemblyName>Sawtooth.Sdk.FSharp</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Wrappers.fs" />
+    <Compile Include="Library.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sdk\Sdk.csproj" />
+  </ItemGroup>
+</Project>

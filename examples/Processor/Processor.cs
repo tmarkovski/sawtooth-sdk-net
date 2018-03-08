@@ -61,7 +61,7 @@ namespace Program
                 {
                     { state.First().Key, ByteString.CopyFrom(BitConverter.GetBytes(val)) }
                 });
-                Console.WriteLine($"Value for {name} decreased to {val}");
+                Console.WriteLine($"Value for {name} decreased to {val}", Color.Orange);
                 return;
             }
             throw new InvalidTransactionException($"Verb is 'dec', but state wasn't found at this address");
@@ -77,7 +77,7 @@ namespace Program
                 {
                     { state.First().Key, ByteString.CopyFrom(BitConverter.GetBytes(val)) }
                 });
-                Console.WriteLine($"Value for {name} increased to {val}");
+                Console.WriteLine($"Value for {name} increased to {val}", Color.Green);
                 return;
             }
             throw new InvalidTransactionException("Verb is 'inc', but state wasn't found at this address");
@@ -94,6 +94,7 @@ namespace Program
             {
                 { GetAddress(name), ByteString.CopyFrom(BitConverter.GetBytes(value)) }
             });
+            Console.WriteLine($"Value for {name} set to {value}", Color.Blue);
         }
     }
 }
