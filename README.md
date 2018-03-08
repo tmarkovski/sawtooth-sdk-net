@@ -11,19 +11,26 @@ Sawtooth is an open source project under the Hyperledger umbrella. For informati
 >
 
 ---
+
 ## Introduction
+
 In this tutorial we will build a sample application for Sawtooth that stores the state of a number to the blockchain. We will use the [Sawtooth SDK for .NET Core](https://www.nuget.org/packages/Sawtooth.Sdk/) available from Nuget. Hyperledger stores information on the blockchain as key value pairs. Each key represents a unique address that points to the value of that object. The value can be anything, it is stored as byte array, so we can serialize any object state using different serialziation methods. For this tutorial, we will use CBOR (Concise Binary Object Representation) serialization using the [PeterO.Cbor](https://www.nuget.org/packages/PeterO.Cbor/) package. You can use JSON or binary serialization for your project if you prefer to do so.
 
 ## Prerequisites
 
 - Make sure you have .[NET Core 2.0+](https://www.microsoft.com/net/download/) installed on your local machine
 - Any IDE will work, since you can run `dotnet` commands from the command line, however Visual Studio or VS Code work pretty well
-- Clone the [Hyperledger Sawtooth repository](https://github.com/hyperledger/sawtooth-core) in a local folder. This is not required to develop applications, but we will need to run an instance of the blockchain and connect our processor to the validator. We'll do that near the end of the tutorial.
 - Install [Docker](https://docs.docker.com/install/). We will run Sawtooth in a container. There are many images available from the above repository that we will use.
 
 ### Create new project
 
 From the command line, type `dotnet new console -lang c# -n Processor` inside a blank directory. This will create new project for our transaction processor. While you're there, also create a project for our client application. The client application will use the Sawtooth REST API to send transaction requests to the blockchain `dotnet new console -lang c# -n Client`. You can also create new projects using File / New Project from the VS menu.
+
+Let's add the packages that we will use. From within the Processor and Client folder type:
+
+`dotnet add package Sawtooth.Sdk`
+
+`dotnet add package PeterO.Cbor`
 
 ### Transaction processor
 
@@ -118,15 +125,16 @@ async Task SetValue(string name, int value, TransactionContext context)
     {
         { GetAddress(name), ByteString.CopyFrom(BitConverter.GetBytes(value)) }
     });
+    Console.WriteLine($"Value for {name} decreased to {value}");
 }
 ~~~
 
 This method does three things in order
 - Reads the state for this address from the ledger
 - If the state already exists, throws an error (we can only increase or decrease the value once it's set - this is a design choice, not a requirement)
-- The the state wasn't set, write the value to the ledger
+- If the state wasn't set, write the value to the ledger
 
-We interact with the state of the ledger by utilizing the `TransactionContext` class. This class contains methods for retrieving and writing the state of the ledger, namely `GetSatetAsync(address)` and `SetStateAsync([adress, value])`. It's important that the address is formed properly, otherwise it will not be written.
+We interact with the state of the ledger by utilizing the `TransactionContext` class. This class contains methods for retrieving and writing the state of the ledger, namely `GetSatetAsync(address)` and `SetStateAsync([address, value])`. It's important that the address is formed properly, otherwise it will not be written.
 
 The remaining two methods look like this
 
@@ -172,6 +180,9 @@ And finally, in our `Program.cs` file we can instantiate and run this processor:
 static void Main(string[] args)
 {
     var validatorAddress = args.Any() ? args.First() : "tcp://127.0.0.1:4004";
+
+    if (!Uri.TryCreate(validatorAddress, UriKind.Absolute, out var _)) 
+        throw new Exception($"Invalid validator address: {validatorAddress}");
 
     var processor = new TransactionProcessor(validatorAddress);
     processor.AddHandler(new IntKeyProcessor());
@@ -246,7 +257,7 @@ This program forms a request that our processor can understand. In order to do t
 This payload is then encoded in a transaction and the entire data is sent to the endpoint.
 
 The SDK provides `Encoder` class with helper functions to create transactions and batches. All transactions are wrapped inside a batch. Both the batch and the transactions must be signed.
-We can use the `Signer` class to create a key pair and sign the data with the private key. You can use any library to create and sign the library as long as it's elliptic curve secp256k1. Azure KeyVault can be used as a signer for this puprose, too.
+We can use the `Signer` class to create a key pair and sign the data with the private key. You can use any library to create and sign the headers as long as it's elliptic curve secp256k1. Azure KeyVault can be used as a signer for this puprose, too.
 
 The [Transactions and Batches](https://sawtooth.hyperledger.org/docs/core/releases/latest/architecture/transactions_and_batches.html) documentation has full details on properly formatting the request. You can also check the .NET SDK source code for sample implementation.
 
@@ -258,36 +269,19 @@ Let's make sure both console application build properly. Build the projects from
 
 ### Run Sawtooth instance with Docker
 
-First, open a console and change to the directory where you pulled the Sawtooth Repository. Inside that directory, there will be a folder named `docker` and inside it another folder named `comspose`.
-
-`cd docker/compose`
-
-Next we will run `docker-compose` to build the images and start the container. We will use the `sawtooth-default.yaml` compose file. This file however, already runs a transaction processor for the `intkey` family written in python. We need to remove this or our processor won't be able to process the transactions since both are configured to run with the same name and version and the validator will select the first processor that connected. You can also change the family name in the code we wrote, if you prefer not to remove this processor.
-
-Inside `sawtooth-default.yaml` remove everything under `intkey-tp-python:`
-
-Remove these lines:
-
-```yaml
-intkey-tp-python:
-  image: hyperledger/sawtooth-intkey-tp-python:1.0
-  container_name: sawtooth-intkey-tp-python-default
-  depends_on:
-    - validator
-  entrypoint: intkey-tp-python -vv -C tcp://validator:4004
-```
-
-Save the file and build the images.
+We will use the tool `docker-compose` that comes with Docker installation. [Download this docker compose file](https://github.com/tmarkovski/sawtooth-sdk-net/blob/master/sawtooth-default.yaml). The file will build docker images and all components needed to run a node of Sawtooth. Run the following from the console:
 
 `docker-compose -f sawtooth-default.yaml up`
 
-After everything is build, docker compose will start all containers. You should see what's going on in your terminal.
+After everything is build, docker compose will start all containers. You should see what's going on in your terminal and here you will see when your transaction processor is connected and when trasnactions are processed.
 You can also check out the documentation on running [Sawtooth with Docker](https://sawtooth.hyperledger.org/docs/core/releases/latest/app_developers_guide/docker.html?highlight=docker).
 
 Once everything completes successfully, we will start our Processor.
-From Visual Studio run the project Processor, or run in console:
+From Visual Studio run the project Processor, or run this in console from within the Processor folder:
 
-`dotnet run Processor`
+`dotnet run`
+
+You can also run `dotnet run tcp://[host_address]:4004` if your processor runs on a different host. Sawtooth validator must already be running for the processor to connect to.
 
 You should see a message that the processor was connected and registered successfully. The processor is now listening for incoming transaction requests.
 Next, we will run the Client to create transaction requests and the processor will act on this.
@@ -304,7 +298,7 @@ Run some more commands from the Client.
 
 or
 
-`dotnet run mykey dec` to decrase it.
+`dotnet run mykey dec` to decrease it.
 
 Congratulations! You've written a full end to end Hyperledger Sawtooth application.
 
