@@ -20,7 +20,7 @@ namespace Program
             var validatorAddress = args.Any() ? args.First() : "tcp://127.0.0.1:4004";
 
             var processor = new TransactionProcessor(validatorAddress);
-            processor.AddHandler(new IntKeyProcessor());
+            processor.AddHandler(new IntKeyHandler());
             processor.Start();
 
             Console.CancelKeyPress += delegate { processor.Stop(); };

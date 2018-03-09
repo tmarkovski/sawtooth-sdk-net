@@ -15,7 +15,7 @@ using Console = Colorful.Console;
 
 namespace Program
 {
-    public class IntKeyProcessor : ITransactionHandler
+    public class IntKeyHandler : ITransactionHandler
     {
         const string familyName = "intkey";
         readonly string PREFIX = familyName.ToByteArray().ToSha512().ToHexString().Substring(0, 6);
