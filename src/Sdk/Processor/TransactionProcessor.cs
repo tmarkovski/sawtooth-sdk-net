@@ -2,27 +2,62 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf;
+using NetMQ;
 using Sawtooth.Sdk.Messaging;
 using static Message.Types;
 
 namespace Sawtooth.Sdk.Processor
 {
-    public class TransactionProcessor
+    public class TransactionProcessor : IStreamListener<TpProcessRequest>
     {
-        readonly Stream Stream;
+        readonly Stream<TpProcessRequest> Stream;
 
-        readonly List<ITransactionHandler> Handlers = new List<ITransactionHandler>();
+        readonly List<ITransactionHandler> Handlers;
 
         public TransactionProcessor(string address)
         {
-            Stream = new Stream(address);
-            Stream.ProcessRequestHandler = OnProcessRequest;
+            Stream = new Stream<TpProcessRequest>(address);
+            Stream.SetListener(this, MessageType.TpProcessRequest);
+
+            Handlers = new List<ITransactionHandler>();
         }
 
         public void AddHandler(ITransactionHandler handler) => Handlers.Add(handler);
+
+        public void Call(TpProcessRequest request, Message message)
+        {
+            Handlers.FirstOrDefault(x => x.FamilyName == request.Header.FamilyName
+                                          && x.Version == request.Header.FamilyVersion)?
+                    .ApplyAsync(request, new TransactionContext(Stream, request.ContextId))
+                    .ContinueWith((task) =>
+            {
+                switch (task.Status)
+                {
+                    case TaskStatus.RanToCompletion:
+                        Stream.Socket.SendFrame(new TpProcessResponse { Status = TpProcessResponse.Types.Status.Ok }
+                                         .Wrap(message, MessageType.TpProcessResponse).ToByteArray());
+                        break;
+
+                    case TaskStatus.Faulted:
+                        var errorData = ByteString.CopyFrom(task.Exception?.ToString() ?? string.Empty, Encoding.UTF8);
+                        if (task.Exception != null && task.Exception.InnerException is InvalidTransactionException)
+                        {
+                            Stream.Socket.SendFrame(new TpProcessResponse { Status = TpProcessResponse.Types.Status.InvalidTransaction }
+                                             .Wrap(message, MessageType.TpProcessResponse).ToByteArray());
+                        }
+                        else
+                        {
+                            Stream.Socket.SendFrame(new TpProcessResponse { Status = TpProcessResponse.Types.Status.InternalError }
+                                           .Wrap(message, MessageType.TpProcessResponse).ToByteArray());
+                        }
+                        break;
+                }
+            });
+        }
 
         public async void Start()
         {
@@ -42,13 +77,6 @@ namespace Sawtooth.Sdk.Processor
         {
             Task.WaitAll(new [] { Stream.Send(new TpUnregisterRequest().Wrap(MessageType.TpUnregisterRequest), CancellationToken.None) });
             Stream.Disconnect();
-        }
-
-        async Task OnProcessRequest(TpProcessRequest request)
-        {
-            await Handlers.FirstOrDefault(x => x.FamilyName == request.Header.FamilyName
-                                          && x.Version == request.Header.FamilyVersion)?
-                          .ApplyAsync(request, new TransactionContext(Stream, request.ContextId));
         }
     }
 }

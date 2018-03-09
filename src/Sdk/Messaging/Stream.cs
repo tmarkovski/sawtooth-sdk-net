@@ -15,16 +15,17 @@ using Sawtooth.Sdk.Client;
 
 namespace Sawtooth.Sdk.Messaging
 {
-    public class Stream
+    public class Stream<T> : IStream where T : IMessage, new()
     {
         readonly string Address;
 
-        readonly NetMQSocket Socket;
+        internal readonly NetMQSocket Socket;
         readonly NetMQPoller Poller;
 
         readonly ConcurrentDictionary<string, TaskCompletionSource<Message>> Futures;
 
-        public Func<TpProcessRequest, Task> ProcessRequestHandler;
+        IStreamListener<T> Listener;
+        MessageType ListenerMessageType;
 
         public Stream(string address)
         {
@@ -40,55 +41,23 @@ namespace Sawtooth.Sdk.Messaging
             Futures = new ConcurrentDictionary<string, TaskCompletionSource<Message>>();
         }
 
+        internal void SetListener(IStreamListener<T> streamDelegate, MessageType messageType)
+        {
+            Listener = streamDelegate;
+            ListenerMessageType = messageType;
+        }
+
         void Receive(object _, NetMQSocketEventArgs e)
         {
             var message = new Message();
             message.MergeFrom(Socket.ReceiveMultipartBytes().SelectMany(x => x).ToArray());
 
-            switch (message.MessageType)
+            if (message.MessageType == MessageType.PingRequest)
             {
-                case MessageType.PingRequest:
-                    Socket.SendFrame(new PingResponse().Wrap(message, MessageType.PingResponse).ToByteArray());
-                    return;
-
-                case MessageType.TpProcessRequest:
-                    Task.Run(async () =>
-                    {
-                        await ProcessRequestHandler.Invoke(message.Unwrap<TpProcessRequest>())
-                            .ContinueWith((task) =>
-                            {
-                                switch (task.Status)
-                                {
-                                    case TaskStatus.RanToCompletion:
-                                        Socket.SendFrame(new TpProcessResponse { Status = TpProcessResponse.Types.Status.Ok }
-                                                         .Wrap(message, MessageType.TpProcessResponse).ToByteArray());
-                                        break;
-
-                                    case TaskStatus.Faulted:
-                                        var errorData = ByteString.CopyFrom(task.Exception?.ToString() ?? string.Empty, Encoding.UTF8);
-                                        if (task.Exception != null && task.Exception.InnerException is InvalidTransactionException)
-                                        {
-                                            Socket.SendFrame(new TpProcessResponse { Status = TpProcessResponse.Types.Status.InvalidTransaction }
-                                                             .Wrap(message, MessageType.TpProcessResponse).ToByteArray());
-                                        }
-                                        else
-                                        {
-                                            Socket.SendFrame(new TpProcessResponse { Status = TpProcessResponse.Types.Status.InternalError }
-                                                           .Wrap(message, MessageType.TpProcessResponse).ToByteArray());
-                                        }
-                                        break;
-                                }
-                            });
-                    });
-                    return;
-
-                case MessageType.TpUnregisterResponse:
-                    Console.WriteLine($"Transaction processor unregister status: {message.Unwrap<TpUnregisterResponse>().Status}");
-                    break;
-
-                default:
-                    Debug.WriteLine($"Message of type {message.MessageType} received");
-                    break;
+                Socket.SendFrame(new PingResponse().Wrap(message, MessageType.PingResponse).ToByteArray());
+            } else if (message.MessageType == ListenerMessageType)
+            {
+                Listener?.Call(message.Unwrap<T>(), message);
             }
 
             if (Futures.TryGetValue(message.CorrelationId, out var source))
@@ -122,9 +91,6 @@ namespace Sawtooth.Sdk.Messaging
 
         public void Connect()
         {
-            if (ProcessRequestHandler == null)
-                throw new ArgumentNullException(nameof(ProcessRequestHandler), "Process request handler must be set");
-            
             Socket.Connect(Address);
             Poller.RunAsync();
         }

@@ -10,10 +10,10 @@ namespace Sawtooth.Sdk.Processor
 {
     public class TransactionContext
     {
-        readonly Stream Stream;
+        readonly IStream Stream;
         readonly string ContextId;
 
-        public TransactionContext(Stream stream, string contextId)
+        public TransactionContext(IStream stream, string contextId)
         {
             Stream = stream;
             ContextId = contextId;

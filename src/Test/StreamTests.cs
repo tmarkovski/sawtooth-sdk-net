@@ -20,8 +20,7 @@ namespace Sawtooth.Sdk.Test
 
             var pingMessage = new PingRequest().Wrap(MessageType.PingRequest);
 
-            var stream = new Stream("inproc://stream-test");
-            stream.ProcessRequestHandler = delegate { return Task.CompletedTask; }; // setting empty handler, to avoid exception
+            var stream = new Stream<TpProcessRequest>("inproc://stream-test");
             stream.Connect();
 
             // Run test case

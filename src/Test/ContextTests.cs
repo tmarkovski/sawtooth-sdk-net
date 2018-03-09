@@ -21,8 +21,7 @@ namespace Sawtooth.Sdk.Test
             var serverSocket = new PairSocket();
             serverSocket.Bind(serverAddress);
 
-            var stream = new Stream(serverAddress);
-            stream.ProcessRequestHandler = delegate { return Task.CompletedTask; }; // setting empty handler, to avoid exception
+            var stream = new Stream<TpProcessRequest>(serverAddress);
             stream.Connect();
 
             var context = new TransactionContext(stream, "context");
