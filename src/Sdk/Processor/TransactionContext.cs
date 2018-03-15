@@ -10,10 +10,10 @@ namespace Sawtooth.Sdk.Processor
 {
     public class TransactionContext
     {
-        readonly Stream Stream;
+        readonly IStreamListener Stream;
         readonly string ContextId;
 
-        public TransactionContext(Stream stream, string contextId)
+        public TransactionContext(IStreamListener stream, string contextId)
         {
             Stream = stream;
             ContextId = contextId;
@@ -24,7 +24,7 @@ namespace Sawtooth.Sdk.Processor
             var request = new TpStateGetRequest { ContextId = ContextId };
             request.Addresses.AddRange(addresses);
 
-            var response = await Stream.Send(request.Wrap(MessageType.TpStateGetRequest), CancellationToken.None);
+            var response = await Stream.SendAsync(request.Wrap(MessageType.TpStateGetRequest), CancellationToken.None);
             return response.Unwrap<TpStateGetResponse>()
                            .Entries.ToDictionary(x => x.Address, x => x.Data);
         }
@@ -34,7 +34,7 @@ namespace Sawtooth.Sdk.Processor
             var request = new TpStateSetRequest { ContextId = ContextId };
             request.Entries.AddRange(addressValuePairs.Select(x => new TpStateEntry { Address = x.Key, Data = x.Value }));
 
-            var response = await Stream.Send(request.Wrap(MessageType.TpStateSetRequest), CancellationToken.None);
+            var response = await Stream.SendAsync(request.Wrap(MessageType.TpStateSetRequest), CancellationToken.None);
             return response.Unwrap<TpStateSetResponse>()
                              .Addresses.ToArray();
         }
@@ -44,7 +44,7 @@ namespace Sawtooth.Sdk.Processor
             var request = new TpStateDeleteRequest { ContextId = ContextId };
             request.Addresses.AddRange(addresses);
 
-            var response = await Stream.Send(request.Wrap(MessageType.TpStateDeleteRequest), CancellationToken.None);
+            var response = await Stream.SendAsync(request.Wrap(MessageType.TpStateDeleteRequest), CancellationToken.None);
             return response.Unwrap<TpStateDeleteResponse>()
                              .Addresses.ToArray();
         }
@@ -54,7 +54,7 @@ namespace Sawtooth.Sdk.Processor
             var request = new TpReceiptAddDataRequest() { ContextId = ContextId };
             request.Data = data;
 
-            var response = await Stream.Send(request.Wrap(MessageType.TpReceiptAddDataRequest), CancellationToken.None);
+            var response = await Stream.SendAsync(request.Wrap(MessageType.TpReceiptAddDataRequest), CancellationToken.None);
             return response.Unwrap<TpReceiptAddDataResponse>()
                              .Status == TpReceiptAddDataResponse.Types.Status.Ok;
         }
@@ -66,7 +66,7 @@ namespace Sawtooth.Sdk.Processor
 
             var request = new TpEventAddRequest { ContextId = ContextId, Event = addEvent };
 
-            var response = await Stream.Send(request.Wrap(MessageType.TpEventAddRequest), CancellationToken.None);
+            var response = await Stream.SendAsync(request.Wrap(MessageType.TpEventAddRequest), CancellationToken.None);
             return response.Unwrap<TpEventAddResponse>()
                              .Status == TpEventAddResponse.Types.Status.Ok;
         }
