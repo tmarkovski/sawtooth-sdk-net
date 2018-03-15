@@ -7,17 +7,31 @@ using Google.Protobuf;
 
 namespace Sawtooth.Sdk.Messaging
 {
+    /// <summary>
+    /// Stream listener base.
+    /// </summary>
     public abstract class StreamListenerBase : IStreamListener
     {
         readonly ConcurrentDictionary<string, TaskCompletionSource<Message>> Futures;
+        /// <summary>
+        /// The stream.
+        /// </summary>
         protected readonly Stream Stream;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:Sawtooth.Sdk.Messaging.StreamListenerBase"/> class.
+        /// </summary>
+        /// <param name="address">Address.</param>
         public StreamListenerBase(string address)
         {
             Stream = new Stream(address, this);
             Futures = new ConcurrentDictionary<string, TaskCompletionSource<Message>>();
         }
 
+        /// <summary>
+        /// Called when the stream receives a message
+        /// </summary>
+        /// <param name="message">Message.</param>
         public virtual void OnMessage(Message message)
         {
             if (Futures.TryGetValue(message.CorrelationId, out var source))
@@ -27,6 +41,12 @@ namespace Sawtooth.Sdk.Messaging
             }
         }
 
+        /// <summary>
+        /// Sends the message to the stream
+        /// </summary>
+        /// <returns>The async.</returns>
+        /// <param name="message">Message.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         public Task<Message> SendAsync(Message message, CancellationToken cancellationToken)
         {
             var source = new TaskCompletionSource<Message>();
@@ -44,8 +64,14 @@ namespace Sawtooth.Sdk.Messaging
             throw new InvalidOperationException("Cannot get or set future context for this message.");
         }
 
+        /// <summary>
+        /// Connects to the stream
+        /// </summary>
         protected void Connect() => Stream.Connect();
 
+        /// <summary>
+        /// Disconnects from the stream
+        /// </summary>
         protected void Disconnect() => Stream.Disconnect();
     }
 }

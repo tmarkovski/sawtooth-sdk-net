@@ -5,8 +5,15 @@ using Sawtooth.Sdk.Messaging;
 
 namespace Sawtooth.Sdk.Client
 {
+    /// <summary>
+    /// Validator client.
+    /// </summary>
     public class ValidatorClient : StreamListenerBase, IDisposable
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:Sawtooth.Sdk.Client.ValidatorClient"/> class.
+        /// </summary>
+        /// <param name="address">Address.</param>
         public ValidatorClient(string address) : base(address)
         {
             Connect();

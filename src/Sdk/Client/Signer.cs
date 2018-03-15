@@ -13,6 +13,9 @@ using Org.BouncyCastle.Security;
 
 namespace Sawtooth.Sdk.Client
 {
+    /// <summary>
+    /// Signer.
+    /// </summary>
     public class Signer : ISigner
     {
         readonly static X9ECParameters Secp256k1 = ECNamedCurveTable.GetByName("secp256k1");

@@ -11,10 +11,17 @@ using static Message.Types;
 
 namespace Sawtooth.Sdk.Processor
 {
+    /// <summary>
+    /// Transaction processor.
+    /// </summary>
     public class TransactionProcessor : StreamListenerBase
     {
         readonly List<ITransactionHandler> Handlers;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:Sawtooth.Sdk.Processor.TransactionProcessor"/> class.
+        /// </summary>
+        /// <param name="address">Address.</param>
         public TransactionProcessor(string address) : base(address)
         {
             Handlers = new List<ITransactionHandler>();

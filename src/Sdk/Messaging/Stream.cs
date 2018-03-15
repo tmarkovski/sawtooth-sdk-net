@@ -15,6 +15,9 @@ using Sawtooth.Sdk.Client;
 
 namespace Sawtooth.Sdk.Messaging
 {
+    /// <summary>
+    /// Stream.
+    /// </summary>
     public class Stream
     {
         readonly string Address;
@@ -24,6 +27,11 @@ namespace Sawtooth.Sdk.Messaging
 
         readonly IStreamListener Listener;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:Sawtooth.Sdk.Messaging.Stream"/> class.
+        /// </summary>
+        /// <param name="address">Address.</param>
+        /// <param name="listener">Listener.</param>
         public Stream(string address, IStreamListener listener = null)
         {
             Address = address;
@@ -55,14 +63,25 @@ namespace Sawtooth.Sdk.Messaging
                     Socket.SendFrame(new PingResponse().Wrap(message, MessageType.PingResponse).ToByteArray());
         }
 
+        /// <summary>
+        /// Send the specified message.
+        /// </summary>
+        /// <returns>The send.</returns>
+        /// <param name="message">Message.</param>
         public void Send(Message message) => Socket.SendFrame(message.ToByteString().ToByteArray());
 
+        /// <summary>
+        /// Connects to the validator
+        /// </summary>
         public void Connect()
         {
             Socket.Connect(Address);
             Poller.RunAsync();
         }
 
+        /// <summary>
+        /// Disconnects from the validator
+        /// </summary>
         public void Disconnect()
         {
             Socket.Disconnect(Address);

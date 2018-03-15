@@ -6,23 +6,41 @@ using Google.Protobuf;
 
 namespace Sawtooth.Sdk.Client
 {
+    /// <summary>
+    /// Encoder.
+    /// </summary>
     public class Encoder
     {
         readonly EncoderSettings settings;
         readonly ISigner signer;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:Sawtooth.Sdk.Client.Encoder"/> class.
+        /// </summary>
+        /// <param name="settings">Settings.</param>
+        /// <param name="privateKey">Private key.</param>
         public Encoder(EncoderSettings settings, byte[] privateKey)
         {
             this.settings = settings;
             this.signer = new Signer(privateKey);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:Sawtooth.Sdk.Client.Encoder"/> class.
+        /// </summary>
+        /// <param name="settings">Settings.</param>
+        /// <param name="signer">Signer.</param>
         public Encoder(EncoderSettings settings, ISigner signer)
         {
             this.settings = settings;
             this.signer = signer;
         }
 
+        /// <summary>
+        /// Creates new transaction.
+        /// </summary>
+        /// <returns>The transaction.</returns>
+        /// <param name="payload">Payload.</param>
         public Transaction CreateTransaction(byte[] payload)
         {
             var header = new TransactionHeader();
@@ -43,6 +61,11 @@ namespace Sawtooth.Sdk.Client
             return transaction;
         }
 
+        /// <summary>
+        /// Creates new batch.
+        /// </summary>
+        /// <returns>The batch.</returns>
+        /// <param name="transactions">Transactions.</param>
         public Batch CreateBatch(IEnumerable<Transaction> transactions)
         {
             var batchHeader = new BatchHeader();
@@ -57,11 +80,21 @@ namespace Sawtooth.Sdk.Client
             return batch;
         }
 
+        /// <summary>
+        /// Creates new batch.
+        /// </summary>
+        /// <returns>The batch.</returns>
+        /// <param name="transaction">Transaction.</param>
         public Batch CreateBatch(Transaction transaction)
         {
             return CreateBatch(new[] { transaction });
         }
 
+        /// <summary>
+        /// Encode the specified batches.
+        /// </summary>
+        /// <returns>The encode.</returns>
+        /// <param name="batches">Batches.</param>
         public byte[] Encode(IEnumerable<Batch> batches)
         {
             var batchList = new BatchList();
@@ -69,6 +102,11 @@ namespace Sawtooth.Sdk.Client
             return batchList.ToByteArray();
         }
 
+        /// <summary>
+        /// Encode the specified batch.
+        /// </summary>
+        /// <returns>The encode.</returns>
+        /// <param name="batch">Batch.</param>
         public byte[] Encode(Batch batch)
         {
             return Encode(new[] { batch });

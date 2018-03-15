@@ -6,6 +6,13 @@
     <AssemblyName>Sawtooth.Sdk</AssemblyName>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DocumentationFile>bin\Debug\netstandard2.0\Sawtooth.Sdk.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType></DebugType>
+    <DocumentationFile>bin\Release\netstandard2.0\Sawtooth.Sdk.xml</DocumentationFile>
+  </PropertyGroup>
   <ItemGroup>
     <Folder Include="Processor\" />
     <Folder Include="Messaging\" />
